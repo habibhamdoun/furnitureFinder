@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Search as SearchIcon, Filter, Heart, ShoppingCart } from 'lucide-react-native';
+import { Search as SearchIcon, ListFilter as Filter, Heart, ShoppingCart } from 'lucide-react-native';
 import { searchProducts, fetchProducts } from '@/services/api';
 import { Product } from '@/types';
 import { useAuth } from '@/hooks/useAuth';

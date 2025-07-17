@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { View, Text } from 'react-native';
-import { Home, Search, Heart, ShoppingCart, User } from 'lucide-react-native';
+import { Chrome as Home, Search, Heart, ShoppingCart, User } from 'lucide-react-native';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
 
