@@ -1,53 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Search, Heart, ShoppingCart } from 'lucide-react-native';
-import { fetchProducts } from '@/services/api';
-import { Product } from '@/types';
+import { Heart, ShoppingCart, Package } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useCart } from '@/hooks/useCart';
+import { Product } from '@/types';
 
-export default function HomeScreen() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+export default function FavoritesScreen() {
   const { user } = useAuth();
-  const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites(user?.id);
+  const { favorites, removeFromFavorites } = useFavorites(user?.id);
   const { addToCart } = useCart(user?.id);
 
-  useEffect(() => {
-    if (!user) {
-      router.replace('/(auth)/login');
-      return;
-    }
-    loadProducts();
-  }, [user]);
-
-  const loadProducts = async () => {
-    try {
-      const data = await fetchProducts(20);
-      setProducts(data.products);
-    } catch (error) {
-      console.error('Error loading products:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadProducts();
-  };
-
-  const handleFavoriteToggle = (product: Product) => {
-    if (isFavorite(product.id)) {
-      removeFromFavorites(product.id);
-    } else {
-      addToFavorites(product);
-    }
+  const handleRemoveFromFavorites = (productId: number) => {
+    removeFromFavorites(productId);
   };
 
   const handleAddToCart = (product: Product) => {
@@ -68,13 +35,9 @@ export default function HomeScreen() {
         />
         <TouchableOpacity
           style={styles.favoriteButton}
-          onPress={() => handleFavoriteToggle(product)}
+          onPress={() => handleRemoveFromFavorites(product.id)}
         >
-          <Heart
-            size={20}
-            color={isFavorite(product.id) ? '#EF4444' : '#9CA3AF'}
-            fill={isFavorite(product.id) ? '#EF4444' : 'transparent'}
-          />
+          <Heart size={20} color="#EF4444" fill="#EF4444" />
         </TouchableOpacity>
       </View>
       
@@ -98,32 +61,34 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading furniture...</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Furniture</Text>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/search')}>
-          <Search size={24} color="#374151" />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Favorites</Text>
       </View>
 
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.productsGrid}>
-          {products.map(renderProduct)}
-        </View>
+      <ScrollView style={styles.content}>
+        {favorites.length > 0 ? (
+          <View style={styles.productsGrid}>
+            {favorites.map(renderProduct)}
+          </View>
+        ) : (
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconContainer}>
+              <Package size={64} color="#D1D5DB" />
+            </View>
+            <Text style={styles.emptyTitle}>No favorites yet</Text>
+            <Text style={styles.emptySubtext}>
+              Start adding items to your favorites list.
+            </Text>
+            <TouchableOpacity
+              style={styles.exploreButton}
+              onPress={() => router.push('/(tabs)')}
+            >
+              <Text style={styles.exploreButtonText}>Explore</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -134,20 +99,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6B7280',
-  },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
@@ -234,5 +186,41 @@ const styles = StyleSheet.create({
     backgroundColor: '#3a9b62',
     borderRadius: 20,
     padding: 8,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingTop: 100,
+  },
+  emptyIconContainer: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 50,
+    padding: 20,
+    marginBottom: 24,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  exploreButton: {
+    backgroundColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+  },
+  exploreButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
   },
 });
