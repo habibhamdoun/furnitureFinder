@@ -30,8 +30,6 @@ export default function HomeScreen() {
       try {
         const data = await fetchProducts(50);
         setProducts(data.products);
-      } catch (e) {
-        // handle error
       } finally {
         setLoading(false);
       }

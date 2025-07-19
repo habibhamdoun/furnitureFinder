@@ -13,7 +13,7 @@ import { Text, View } from 'react-native';
 
 export default function TabLayout() {
   const { user } = useAuth();
-  const { getCartItemsCount } = useCart(user?.id);
+  const { getCartItemsCount } = useCart();
 
   const CartIcon = ({
     color,

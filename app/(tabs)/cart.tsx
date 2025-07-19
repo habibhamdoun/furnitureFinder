@@ -10,7 +10,7 @@ import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 export default function CartScreen() {
   const { user } = useAuth();
   const { cartItems, updateQuantity, removeFromCart, getCartTotal, clearCart } =
-    useCart(user?.id);
+    useCart();
 
   const handleQuantityChange = (productId: number, newQuantity: number) => {
     if (newQuantity < 1) {

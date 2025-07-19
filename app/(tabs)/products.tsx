@@ -22,8 +22,8 @@ export default function ProductsScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [minPrice, setMinPrice] = useState(''); // Keep if used in filtering logic
-  const [maxPrice, setMaxPrice] = useState(''); // Keep if used in filtering logic
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   const [showSort, setShowSort] = useState(false);
   const [sortOption, setSortOption] = useState<
     'price-asc' | 'price-desc' | 'name-asc' | 'name-desc' | null
@@ -31,10 +31,8 @@ export default function ProductsScreen() {
   const [predictions, setPredictions] = useState<string[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const { user, loading } = useAuth();
-  const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites(
-    user?.id,
-  );
-  const { addToCart } = useCart(user?.id);
+  const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
+  const { addToCart } = useCart();
 
   useEffect(() => {
     if (loading) return;
@@ -63,7 +61,6 @@ export default function ProductsScreen() {
     loadProducts();
   };
 
-  // Filtering logic
   let filteredProducts = products.filter(
     (product) =>
       (searchQuery === '' ||
@@ -75,7 +72,6 @@ export default function ProductsScreen() {
       (maxPrice === '' || product.price <= parseFloat(maxPrice)),
   );
 
-  // Sorting logic
   if (sortOption === 'price-asc') {
     filteredProducts = [...filteredProducts].sort((a, b) => a.price - b.price);
   } else if (sortOption === 'price-desc') {

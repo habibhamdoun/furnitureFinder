@@ -19,7 +19,7 @@ import {
 
 export default function ProfileScreen() {
   const { user, logout, updateUser, loading } = useAuth();
-  const { favorites } = useFavorites(user?.id);
+  const { favorites } = useFavorites();
   const [imageLoading, setImageLoading] = useState(false);
   const systemColorScheme = useColorScheme();
   const { theme, setTheme } = useThemeContext();

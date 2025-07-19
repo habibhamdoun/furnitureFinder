@@ -11,10 +11,8 @@ import { ScrollView, Text, View } from 'react-native';
 
 export default function FavoritesScreen() {
   const { user } = useAuth();
-  const { favorites, removeFromFavorites, reloadFavorites } = useFavorites(
-    user?.id,
-  );
-  const { addToCart } = useCart(user?.id);
+  const { favorites, removeFromFavorites, reloadFavorites } = useFavorites();
+  const { addToCart } = useCart();
 
   useFocusEffect(
     useCallback(() => {
