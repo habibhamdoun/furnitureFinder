@@ -1,238 +1,128 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
-import { Image } from 'expo-image';
-import { router } from 'expo-router';
-import { Search, Heart, ShoppingCart } from 'lucide-react-native';
+import FeaturedItem from '@/components/FeaturedItem';
 import { fetchProducts } from '@/services/api';
 import { Product } from '@/types';
-import { useAuth } from '@/hooks/useAuth';
-import { useFavorites } from '@/hooks/useFavorites';
-import { useCart } from '@/hooks/useCart';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+
+const categories = [
+  'furniture',
+  'beds',
+  'bedside tables',
+  'office chairs',
+  'bathroom',
+];
 
 export default function HomeScreen() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const { user } = useAuth();
-  const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites(user?.id);
-  const { addToCart } = useCart(user?.id);
 
   useEffect(() => {
-    if (!user) {
-      router.replace('/(auth)/login');
-      return;
-    }
+    const loadProducts = async () => {
+      setLoading(true);
+      try {
+        const data = await fetchProducts(50);
+        setProducts(data.products);
+      } catch (e) {
+        // handle error
+      } finally {
+        setLoading(false);
+      }
+    };
     loadProducts();
-  }, [user]);
+  }, []);
 
-  const loadProducts = async () => {
-    try {
-      const data = await fetchProducts(20);
-      setProducts(data.products);
-    } catch (error) {
-      console.error('Error loading products:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadProducts();
-  };
-
-  const handleFavoriteToggle = (product: Product) => {
-    if (isFavorite(product.id)) {
-      removeFromFavorites(product.id);
-    } else {
-      addToFavorites(product);
-    }
-  };
-
-  const handleAddToCart = (product: Product) => {
-    addToCart(product);
-  };
-
-  const renderProduct = (product: Product) => (
-    <TouchableOpacity
-      key={product.id}
-      style={styles.productCard}
-      onPress={() => router.push(`/product/${product.id}`)}
-    >
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: product.thumbnail }}
-          style={styles.productImage}
-          contentFit="cover"
-        />
-        <TouchableOpacity
-          style={styles.favoriteButton}
-          onPress={() => handleFavoriteToggle(product)}
-        >
-          <Heart
-            size={20}
-            color={isFavorite(product.id) ? '#EF4444' : '#9CA3AF'}
-            fill={isFavorite(product.id) ? '#EF4444' : 'transparent'}
-          />
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.productInfo}>
-        <Text style={styles.productTitle} numberOfLines={2}>
-          {product.title}
-        </Text>
-        <Text style={styles.productDescription} numberOfLines={2}>
-          {product.description}
-        </Text>
-        <View style={styles.priceContainer}>
-          <Text style={styles.price}>${product.price}</Text>
-          <TouchableOpacity
-            style={styles.addToCartButton}
-            onPress={() => handleAddToCart(product)}
-          >
-            <ShoppingCart size={16} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading furniture...</Text>
-      </View>
-    );
-  }
+  const filteredProducts = selectedTag
+    ? products.filter((product) => product.tags?.includes(selectedTag))
+    : products;
+  const router = useRouter();
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Furniture</Text>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/search')}>
-          <Search size={24} color="#374151" />
+    <View className='flex-1 bg-gray-50 pt-12'>
+      <View className='flex-row items-center justify-between px-6 pt-6 pb-3'>
+        <Text className='text-xl font-bold text-gray-900'>
+          Furniture Finder
+        </Text>
+      </View>
+      <View className='px-6 mb-4'>
+        <TouchableOpacity
+          className='bg-green-600 rounded-xl py-3 items-center mb-2'
+          onPress={() => router.push('/(tabs)/products')}
+          activeOpacity={0.85}
+        >
+          <Text className='text-base font-semibold text-white'>SHOP NOW</Text>
         </TouchableOpacity>
       </View>
-
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.productsGrid}>
-          {products.map(renderProduct)}
-        </View>
-      </ScrollView>
+      <Text className='text-xl font-bold text-gray-900 ml-6 mb-3 mt-2'>
+        Categories
+      </Text>
+      <View className='flex gap-6'>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className='pl-4 mb-6'
+        >
+          {categories.map((cat) => (
+            <TouchableOpacity
+              key={cat}
+              className={`rounded-2xl px-5 py-2 mr-3 ${selectedTag === cat ? 'bg-green-600' : 'bg-gray-200'}`}
+              onPress={() => setSelectedTag(selectedTag === cat ? null : cat)}
+            >
+              <Text
+                className={`text-base font-medium ${selectedTag === cat ? 'text-white' : 'text-gray-600'}`}
+              >
+                {cat}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        <ScrollView className='px-4'>
+          {loading ? (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: 200,
+              }}
+            >
+              <ActivityIndicator size='large' color='#3a9b62' />
+              <Text style={{ color: '#3a9b62', marginTop: 12 }}>
+                Loading featured items...
+              </Text>
+            </View>
+          ) : filteredProducts.length === 0 ? (
+            <Text className='text-center text-gray-400 mt-10'>
+              No products found.
+            </Text>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingRight: 16 }}
+            >
+              {filteredProducts.map((product, idx) => (
+                <FeaturedItem
+                  key={product.id}
+                  item={{
+                    title: product.title,
+                    description: product.description,
+                    image: product.thumbnail,
+                  }}
+                  isLast={idx === filteredProducts.length - 1}
+                />
+              ))}
+            </ScrollView>
+          )}
+        </ScrollView>
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: '#FFFFFF',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  content: {
-    flex: 1,
-  },
-  productsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 16,
-    justifyContent: 'space-between',
-  },
-  productCard: {
-    width: '48%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  imageContainer: {
-    position: 'relative',
-  },
-  productImage: {
-    width: '100%',
-    height: 150,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
-  },
-  productInfo: {
-    padding: 12,
-  },
-  productTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  productDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 8,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  price: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#3a9b62',
-  },
-  addToCartButton: {
-    backgroundColor: '#3a9b62',
-    borderRadius: 20,
-    padding: 8,
-  },
-});

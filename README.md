@@ -1,50 +1,97 @@
-# Welcome to your Expo app 👋
+# Furniture Finder
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A modern cross-platform app to browse, search, and shop for furniture. Built with Expo, React Native, and TypeScript.
 
-## Get started
+---
 
-1. Install dependencies
+## 🚀 Installation & Running
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/habibhamdoun/furnitureFinder.git
+   ```
+
+2. **Install dependencies**
 
    ```bash
    npm install
    ```
 
-2. Start the app
+3. **Start the app**
 
    ```bash
+   npm start
+   # or
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+> Requires [Node.js](https://nodejs.org/), [npm](https://www.npmjs.com/), and [Expo CLI](https://docs.expo.dev/get-started/installation/) (install with `npm install -g expo-cli`).
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Features Implemented
 
-## Get a fresh project
+- **User Authentication**
+  - Simple login flow (demo credentials)
+  - Persistent user session
 
-When you're ready, run:
+- **Product Browsing**
+  - Home screen with featured items and categories
+  - Products tab with full product list
+  - Product detail view with images, description, and price
 
-```bash
-npm run reset-project
-```
+- **Search & Filter**
+  - Search products by name or description
+  - Filter by price range
+  - Sort by price or name
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- **Favorites**
+  - Add/remove products to favorites
+  - View all favorite products in a dedicated tab
+  - Favorites are persisted per user
 
-## Learn more
+- **Shopping Cart**
+  - Add/remove products to cart
+  - Update item quantities
+  - View cart total and item count
+  - Demo checkout flow (no real payment)
 
-To learn more about developing your project with Expo, look at the following resources:
+- **Profile & Settings**
+  - View user profile
+  - Switch between light and dark theme
+  - Update profile image (demo)
+  - Logout
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- **Modern UI/UX**
+  - Responsive design for mobile and web
+  - Custom splash screen
+  - Toast notifications for actions
+  - Smooth navigation with bottom tabs
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
+## Project Structure
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- `app/` — App screens and navigation (file-based routing)
+- `components/` — Reusable UI components
+- `hooks/` — Custom React hooks (auth, cart, favorites, theme)
+- `services/` — API and data fetching logic
+- `constants/` — Static data and color themes
+- `assets/` — Images and fonts
+
+---
+
+## Notes
+
+- This is a demo app. No real backend or payment integration.
+- All data is stored locally using AsyncStorage.
+- For development only. Not production-ready.
+
+---
+
+## Learn More
+
+- [Expo Documentation](https://docs.expo.dev/)
+- [React Native](https://reactnative.dev/)
+- [TypeScript](https://www.typescriptlang.org/)

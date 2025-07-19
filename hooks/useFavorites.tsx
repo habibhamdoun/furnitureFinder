@@ -1,10 +1,20 @@
-import { useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Product } from '@/types';
 
 const FAVORITES_KEY = 'furniture_finder_favorites';
 
-export const useFavorites = (userId?: string) => {
+interface FavoritesContextType {
+  favorites: Product[];
+  addToFavorites: (product: Product) => Promise<void>;
+  removeFromFavorites: (productId: number) => Promise<void>;
+  isFavorite: (productId: number) => boolean;
+  reloadFavorites: () => Promise<void>;
+}
+
+const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
+
+export function FavoritesProvider({ userId, children }: { userId?: string; children: React.ReactNode }) {
   const [favorites, setFavorites] = useState<Product[]>([]);
 
   useEffect(() => {
@@ -18,6 +28,8 @@ export const useFavorites = (userId?: string) => {
       const favoritesData = await AsyncStorage.getItem(`${FAVORITES_KEY}_${userId}`);
       if (favoritesData) {
         setFavorites(JSON.parse(favoritesData));
+      } else {
+        setFavorites([]);
       }
     } catch (error) {
       console.error('Error loading favorites:', error);
@@ -48,5 +60,23 @@ export const useFavorites = (userId?: string) => {
     return favorites.some(item => item.id === productId);
   };
 
-  return { favorites, addToFavorites, removeFromFavorites, isFavorite };
-};
+  return (
+    <FavoritesContext.Provider value={{
+      favorites,
+      addToFavorites,
+      removeFromFavorites,
+      isFavorite,
+      reloadFavorites: loadFavorites,
+    }}>
+      {children}
+    </FavoritesContext.Provider>
+  );
+}
+
+export function useFavorites() {
+  const context = useContext(FavoritesContext);
+  if (!context) {
+    throw new Error('useFavorites must be used within a FavoritesProvider');
+  }
+  return context;
+}

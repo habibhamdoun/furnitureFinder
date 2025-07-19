@@ -1,13 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/hooks/useCart';
+import { useFavorites } from '@/hooks/useFavorites';
+import { fetchProduct } from '@/services/api';
+import { Product } from '@/types';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Heart, ShoppingCart, Star } from 'lucide-react-native';
-import { fetchProduct } from '@/services/api';
-import { Product } from '@/types';
-import { useAuth } from '@/hooks/useAuth';
-import { useFavorites } from '@/hooks/useFavorites';
-import { useCart } from '@/hooks/useCart';
+import React, { useEffect, useState } from 'react';
+import {
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Toast } from 'toastify-react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -16,9 +24,11 @@ export default function ProductDetailScreen() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  
+
   const { user } = useAuth();
-  const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites(user?.id);
+  const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites(
+    user?.id,
+  );
   const { addToCart } = useCart(user?.id);
 
   useEffect(() => {
@@ -40,17 +50,20 @@ export default function ProductDetailScreen() {
 
   const handleFavoriteToggle = () => {
     if (!product) return;
-    
+
     if (isFavorite(product.id)) {
       removeFromFavorites(product.id);
+      Toast.success('Removed from favorites');
     } else {
       addToFavorites(product);
+      Toast.success('Added to favorites!');
     }
   };
 
   const handleAddToCart = () => {
     if (product) {
       addToCart(product);
+      Toast.success('Added to cart!');
     }
   };
 
@@ -66,22 +79,34 @@ export default function ProductDetailScreen() {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>Product not found</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  const images = product.images && product.images.length > 0 ? product.images : [product.thumbnail];
+  const images =
+    product.images && product.images.length > 0
+      ? product.images
+      : [product.thumbnail];
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-          <ArrowLeft size={24} color="#374151" />
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => router.back()}
+        >
+          <ArrowLeft size={24} color='#374151' />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.headerButton} onPress={handleFavoriteToggle}>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={handleFavoriteToggle}
+        >
           <Heart
             size={24}
             color={isFavorite(product.id) ? '#EF4444' : '#374151'}
@@ -97,7 +122,9 @@ export default function ProductDetailScreen() {
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={(event) => {
-              const index = Math.round(event.nativeEvent.contentOffset.x / width);
+              const index = Math.round(
+                event.nativeEvent.contentOffset.x / width,
+              );
               setSelectedImageIndex(index);
             }}
           >
@@ -106,11 +133,11 @@ export default function ProductDetailScreen() {
                 key={index}
                 source={{ uri: image }}
                 style={styles.productImage}
-                contentFit="cover"
+                contentFit='cover'
               />
             ))}
           </ScrollView>
-          
+
           {images.length > 1 && (
             <View style={styles.imageIndicators}>
               {images.map((_, index) => (
@@ -118,7 +145,7 @@ export default function ProductDetailScreen() {
                   key={index}
                   style={[
                     styles.indicator,
-                    selectedImageIndex === index && styles.activeIndicator
+                    selectedImageIndex === index && styles.activeIndicator,
                   ]}
                 />
               ))}
@@ -128,15 +155,19 @@ export default function ProductDetailScreen() {
 
         <View style={styles.productInfo}>
           <Text style={styles.productTitle}>{product.title}</Text>
-          
+
           <View style={styles.ratingContainer}>
             <View style={styles.stars}>
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
                   size={16}
-                  color={star <= Math.floor(product.rating) ? '#FCD34D' : '#E5E7EB'}
-                  fill={star <= Math.floor(product.rating) ? '#FCD34D' : '#E5E7EB'}
+                  color={
+                    star <= Math.floor(product.rating) ? '#FCD34D' : '#E5E7EB'
+                  }
+                  fill={
+                    star <= Math.floor(product.rating) ? '#FCD34D' : '#E5E7EB'
+                  }
                 />
               ))}
             </View>
@@ -168,11 +199,15 @@ export default function ProductDetailScreen() {
 
           <View style={styles.stockContainer}>
             <Text style={styles.stockLabel}>Stock:</Text>
-            <Text style={[
-              styles.stockText,
-              product.stock > 10 ? styles.inStock : styles.lowStock
-            ]}>
-              {product.stock > 0 ? `${product.stock} available` : 'Out of stock'}
+            <Text
+              style={[
+                styles.stockText,
+                product.stock > 10 ? styles.inStock : styles.lowStock,
+              ]}
+            >
+              {product.stock > 0
+                ? `${product.stock} available`
+                : 'Out of stock'}
             </Text>
           </View>
 
@@ -185,12 +220,12 @@ export default function ProductDetailScreen() {
         <TouchableOpacity
           style={[
             styles.addToCartButton,
-            product.stock === 0 && styles.disabledButton
+            product.stock === 0 && styles.disabledButton,
           ]}
           onPress={handleAddToCart}
           disabled={product.stock === 0}
         >
-          <ShoppingCart size={20} color="#FFFFFF" />
+          <ShoppingCart size={20} color='#FFFFFF' />
           <Text style={styles.addToCartButtonText}>
             {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
           </Text>

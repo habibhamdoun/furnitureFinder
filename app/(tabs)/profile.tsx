@@ -1,345 +1,250 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { Image } from 'expo-image';
-import { router } from 'expo-router';
-import { Camera, Settings, LogOut } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { useThemeContext } from '@/hooks/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { useFavorites } from '@/hooks/useFavorites';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
+import { Camera, LogOut, Moon, Settings, Sun } from 'lucide-react-native';
+import React, { useState } from 'react';
+import {
+  ActionSheetIOS,
+  Alert,
+  Platform,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function ProfileScreen() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout, updateUser, loading } = useAuth();
   const { favorites } = useFavorites(user?.id);
   const [imageLoading, setImageLoading] = useState(false);
+  const systemColorScheme = useColorScheme();
+  const { theme, setTheme } = useThemeContext();
 
-  const handleTakePhoto = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Camera permission is required to take photos.');
-        return;
+  React.useEffect(() => {
+    (async () => {
+      const stored = await AsyncStorage.getItem('theme');
+      if (stored === 'light' || stored === 'dark') setTheme(stored);
+    })();
+  }, []);
+
+  const toggleTheme = async () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+  };
+
+  const handleProfilePhoto = async () => {
+    const showPicker = async (mode: 'camera' | 'gallery') => {
+      try {
+        if (mode === 'camera') {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert(
+              'Permission needed',
+              'Camera permission is required to take photos.',
+            );
+            return;
+          }
+        } else {
+          const { status } =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert(
+              'Permission needed',
+              'Media library permission is required.',
+            );
+            return;
+          }
+        }
+        setImageLoading(true);
+        const result =
+          mode === 'camera'
+            ? await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+              })
+            : await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+              });
+        if (!result.canceled && result.assets[0] && user) {
+          const updatedUser = {
+            ...user,
+            profileImage: result.assets[0].uri,
+          };
+          await updateUser(updatedUser);
+        }
+      } catch (error) {
+        console.error('Error picking photo:', error);
+        Alert.alert('Error', 'Failed to pick photo. Please try again.');
+      } finally {
+        setImageLoading(false);
       }
-
-      setImageLoading(true);
-      
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0] && user) {
-        const updatedUser = {
-          ...user,
-          profileImage: result.assets[0].uri,
-        };
-        await updateUser(updatedUser);
-      }
-    } catch (error) {
-      console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo. Please try again.');
-    } finally {
-      setImageLoading(false);
+    };
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo', 'Choose from Gallery'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) showPicker('camera');
+          if (buttonIndex === 2) showPicker('gallery');
+        },
+      );
+    } else {
+      Alert.alert('Profile Photo', 'Choose an option', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Take Photo', onPress: () => showPicker('camera') },
+        { text: 'Choose from Gallery', onPress: () => showPicker('gallery') },
+      ]);
     }
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/(auth)/login');
-          }
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+          router.replace('/(auth)/login');
         },
-      ]
-    );
+      },
+    ]);
   };
+
+  if (loading) {
+    return (
+      <View className='flex-1 justify-center items-center bg-[#F9FAFB]'>
+        <Text className='text-lg font-bold text-[#374151]'>Loading...</Text>
+      </View>
+    );
+  }
 
   if (!user) {
     return null;
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Your Profile</Text>
-        <TouchableOpacity>
-          <Settings size={24} color="#374151" />
-        </TouchableOpacity>
+    <View className='flex-1 bg-[#F9FAFB]'>
+      <View className='flex-row justify-between items-center px-5 pt-16 pb-5 bg-white'>
+        <Text className='text-2xl font-bold text-[#111827]'>Your Profile</Text>
+        <View className='flex flex-row gap-3'>
+          <TouchableOpacity onPress={toggleTheme}>
+            {theme === 'dark' ? (
+              <Sun size={24} color='#3a9b62' />
+            ) : (
+              <Moon size={24} color='#3a9b62' />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Settings size={24} color='#374151' />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
+      <View className='flex-1 p-5'>
+        <View className='items-center bg-white rounded-2xl p-8 mb-6 shadow-md'>
+          <View className='mb-4'>
             {user.profileImage ? (
               <Image
                 source={{ uri: user.profileImage }}
-                style={styles.avatar}
-                contentFit="cover"
+                style={{ width: 100, height: 100, borderRadius: 50 }}
+                contentFit='cover'
               />
             ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>
-                  {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+              <View className='w-[100px] h-[100px] rounded-full bg-[#E5D5B7] justify-center items-center'>
+                <Text className='text-4xl font-bold text-[#8B4513]'>
+                  {user.name
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .toUpperCase()}
                 </Text>
               </View>
             )}
           </View>
-          
-          <Text style={styles.userName}>{user.name}</Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
+
+          <Text className='text-2xl font-bold text-[#111827] mb-1'>
+            {user.name}
+          </Text>
+          <Text className='text-base text-[#6B7280]'>{user.email}</Text>
         </View>
 
-        <View style={styles.favoritesSection}>
-          <Text style={styles.sectionTitle}>Favorites</Text>
-          
+        <View className='bg-white rounded-2xl p-5 mb-6 shadow-md'>
+          <Text className='text-xl font-bold text-[#111827] mb-4'>
+            Favorites
+          </Text>
+
           {favorites.length > 0 ? (
-            <View style={styles.favoritesGrid}>
+            <View className='flex-row flex-wrap' style={{ gap: 8 }}>
               {favorites.slice(0, 4).map((product) => (
                 <TouchableOpacity
                   key={product.id}
-                  style={styles.favoriteItem}
+                  className='w-[60px] h-[60px] rounded-lg overflow-hidden'
                   onPress={() => router.push(`/product/${product.id}`)}
                 >
                   <Image
                     source={{ uri: product.thumbnail }}
-                    style={styles.favoriteImage}
-                    contentFit="cover"
+                    style={{ width: '100%', height: '100%' }}
+                    contentFit='cover'
                   />
                 </TouchableOpacity>
               ))}
               {favorites.length > 4 && (
                 <TouchableOpacity
-                  style={styles.moreItems}
+                  className='w-[60px] h-[60px] rounded-lg bg-[#F3F4F6] justify-center items-center'
                   onPress={() => router.push('/(tabs)/favorites')}
                 >
-                  <Text style={styles.moreItemsText}>+{favorites.length - 4}</Text>
+                  <Text className='text-sm font-semibold text-[#6B7280]'>
+                    +{favorites.length - 4}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
           ) : (
-            <View style={styles.emptyFavorites}>
-              <View style={styles.emptyBox} />
-              <Text style={styles.emptyTitle}>No favorites yet</Text>
-              <Text style={styles.emptySubtext}>
+            <View className='items-center py-5'>
+              <View className='w-[120px] h-20 bg-[#E5D5B7] rounded-lg mb-4' />
+              <Text className='text-lg font-bold text-[#111827] mb-2'>
+                No favorites yet
+              </Text>
+              <Text className='text-sm text-[#6B7280] text-center mb-4'>
                 Start adding items to your favorites list.
               </Text>
-              <TouchableOpacity
-                style={styles.exploreButton}
-                onPress={() => router.push('/(tabs)')}
-              >
-                <Text style={styles.exploreButtonText}>Explore</Text>
-              </TouchableOpacity>
             </View>
           )}
         </View>
 
         <TouchableOpacity
-          style={styles.photoButton}
-          onPress={handleTakePhoto}
+          className='flex-row items-center justify-center bg-[#E5E7EB] rounded-xl p-4 mb-4'
+          onPress={handleProfilePhoto}
           disabled={imageLoading}
         >
-          <Camera size={20} color="#374151" />
-          <Text style={styles.photoButtonText}>
-            {imageLoading ? 'Taking Photo...' : 'Take Profile Photo'}
+          <Camera size={20} color='#374151' />
+          <Text className='text-base font-semibold text-[#374151] ml-2'>
+            {imageLoading ? 'Taking Photo...' : 'Change Profile Photo'}
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <LogOut size={20} color="#FFFFFF" />
-          <Text style={styles.logoutButtonText}>Logout</Text>
+        <TouchableOpacity
+          className='flex-row items-center justify-center bg-[#3a9b62] rounded-xl p-4'
+          onPress={handleLogout}
+        >
+          <LogOut size={20} color='#FFFFFF' />
+          <Text className='text-base font-semibold text-white ml-2'>
+            Logout
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: '#FFFFFF',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  profileSection: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 32,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  avatarContainer: {
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-  avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#E5D5B7',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#8B4513',
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  favoritesSection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
-  },
-  favoritesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  favoriteItem: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  favoriteImage: {
-    width: '100%',
-    height: '100%',
-  },
-  moreItems: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  moreItemsText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  emptyFavorites: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  emptyBox: {
-    width: 120,
-    height: 80,
-    backgroundColor: '#E5D5B7',
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  exploreButton: {
-    backgroundColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-  },
-  exploreButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  photoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  photoButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginLeft: 8,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3a9b62',
-    borderRadius: 12,
-    padding: 16,
-  },
-  logoutButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginLeft: 8,
-  },
-});
